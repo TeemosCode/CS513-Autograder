@@ -1,1 +1,0 @@
-select (personal||' '||family) as Full_Name from Person order by family
