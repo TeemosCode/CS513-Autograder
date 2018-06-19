@@ -49,7 +49,7 @@ def print_output(message, print_feedback_to):
     print >> print_feedback_to, message
 
 
-def dir_file_ingore_hidden_files_list(dir_path):
+def dir_file_ignore_hidden_files_list(dir_path):
     return [file_or_dir for file_or_dir in os.listdir(dir_path) if not file_or_dir.startswith(".")]
 
 if __name__ == "__main__":
@@ -57,27 +57,41 @@ if __name__ == "__main__":
     config_file = "grading_config.json"
 
     try:
-        dir_file_checklist = dir_file_ingore_hidden_files_list(solutions_dir)
+        home_solution_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), solutions_dir)
+
+        dir_file_checklist = dir_file_ignore_hidden_files_list(solutions_dir)
 
         print "  \nList of submitted files for grading:\n", dir_file_checklist, "\n==========================================================================="
 
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), solutions_dir + "/" + dir_file_checklist[0])
-        if len(dir_file_checklist) == 1 and os.path.isdir(path):
-            print("Please zip all the answers under EXACTLY ONE zip file next time!!")
-            print("Because your zip file had another folder with the answers within, the auto-grader will move all the\
-            files one directory upwards and delete your original sub-folder so it could work with the auto-grader for successful\
-            grading")
+        path_under_solutions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), solutions_dir + "/" + dir_file_checklist[0])
+        path = path_under_solutions_dir
+        prev_path = home_solution_dir
+        have_subfolders = False
+
+        while len(dir_file_checklist) == 1 and os.path.isdir(path):
+            have_subfolders = True
+            prev_path = path
+            dir_file_checklist = dir_file_ignore_hidden_files_list(path)
+            path = os.path.join(path, dir_file_checklist[0])
+
+        if have_subfolders:
+            path = prev_path
+            print "Please zip all the answers under EXACTLY ONE zip file next time!!" 
+            print "Because your zip file had other folder(s) with the answers within, the auto-grader will move all the\
+            files upwards below the 'solutions directory' and delete your original sub-folder so it could work with the auto-grader for successful\
+            grading" 
             print("Processing .....\n-------------------")
             print("Extracting all answer files ...\n-------------------")
-            answer_files = dir_file_ingore_hidden_files_list(path)
+            answer_files = dir_file_ignore_hidden_files_list(path)
             print(answer_files)
             print("Moving all answer files to correct location for further grading\n-----------------")
             for files in answer_files:
-                shutil.move(path + "/" + files, os.path.join(os.path.dirname(os.path.abspath(__file__)), solutions_dir))
+                shutil.move(path + "/" + files, home_solution_dir)
             print("Deleting sub-folder .... \n-----------------")
-            shutil.rmtree(path)
+            shutil.rmtree(path_under_solutions_dir)
             print("FINISHED!")
-    except:
+    except Exception as e:
+        print e
         print("Please zip your answer files ALL UNDER ONE ZIP FOLDER!")
 
     meta_reader = metadata_reader.JSONMetadataReader(config_file, solutions_dir)
